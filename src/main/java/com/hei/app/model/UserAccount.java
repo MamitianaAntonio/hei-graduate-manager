@@ -9,8 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,9 +20,7 @@ import lombok.Setter;
     uniqueConstraints = {@UniqueConstraint(name = "uk_user_account_email", columnNames = "email")})
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
-@Builder
 @EqualsAndHashCode
 public class UserAccount {
   @Id @GeneratedValue private UUID id;

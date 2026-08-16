@@ -11,8 +11,6 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -24,8 +22,6 @@ import lombok.Setter;
     uniqueConstraints = {@UniqueConstraint(name = "uk_student_std", columnNames = "std")})
 @Getter
 @Setter
-@AllArgsConstructor
-@Builder
 @NoArgsConstructor
 @EqualsAndHashCode
 public class Student {
