@@ -8,5 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface GroupRepository extends JpaRepository<Group, UUID> {
   Optional<Group> findByRef(String ref);
 
-  boolean existsByref(String ref);
+  boolean existsByRef(String ref);
 }
