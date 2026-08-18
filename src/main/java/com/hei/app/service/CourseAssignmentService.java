@@ -31,8 +31,7 @@ public class CourseAssignmentService {
     if (courseAssignmentRepository.existsByTeacherIdAndCourseId(
         request.teacherId(), request.courseId())) {
 
-      throw new DuplicateResourceException(
-          "Teacher is already assigned to this course");
+      throw new DuplicateResourceException("Teacher is already assigned to this course");
     }
 
     CourseAssignment assignment = courseAssignmentMapper.toEntity(request);
@@ -48,9 +47,7 @@ public class CourseAssignmentService {
         courseAssignmentRepository
             .findById(id)
             .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "Course assignment not found with id: " + id));
+                () -> new ResourceNotFoundException("Course assignment not found with id: " + id));
 
     return courseAssignmentMapper.toResponse(assignment);
   }
@@ -84,9 +81,7 @@ public class CourseAssignmentService {
         courseAssignmentRepository
             .findById(id)
             .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "Course assignment not found with id: " + id));
+                () -> new ResourceNotFoundException("Course assignment not found with id: " + id));
 
     applyRelations(assignment, request);
 
@@ -122,8 +117,7 @@ public class CourseAssignmentService {
             .findById(request.groupId())
             .orElseThrow(
                 () ->
-                    new ResourceNotFoundException(
-                        "Group not found with id: " + request.groupId()));
+                    new ResourceNotFoundException("Group not found with id: " + request.groupId()));
 
     assignment.setCourse(course);
     assignment.setTeacher(teacher);
