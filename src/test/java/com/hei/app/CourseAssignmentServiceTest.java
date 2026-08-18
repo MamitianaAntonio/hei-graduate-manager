@@ -11,8 +11,14 @@ import com.hei.app.dto.assignment.CourseAssignmentResponse;
 import com.hei.app.exceptions.DuplicateResourceException;
 import com.hei.app.exceptions.ResourceNotFoundException;
 import com.hei.app.mapper.CourseAssignmentMapper;
+import com.hei.app.model.Course;
 import com.hei.app.model.CourseAssignment;
+import com.hei.app.model.Group;
+import com.hei.app.model.Teacher;
 import com.hei.app.repository.CourseAssignmentRepository;
+import com.hei.app.repository.CourseRepository;
+import com.hei.app.repository.GroupRepository;
+import com.hei.app.repository.TeacherRepository;
 import com.hei.app.service.CourseAssignmentService;
 import java.util.List;
 import java.util.Optional;
@@ -29,20 +35,33 @@ public class CourseAssignmentServiceTest {
 
   @Mock private CourseAssignmentMapper courseAssignmentMapper;
 
+  @Mock private CourseRepository courseRepository;
+
+  @Mock private TeacherRepository teacherRepository;
+
+  @Mock private GroupRepository groupRepository;
+
   @InjectMocks private CourseAssignmentService courseAssignmentService;
 
   @Test
   void create_shouldReturnCourseAssignment() {
     CourseAssignmentRequest request = mock(CourseAssignmentRequest.class);
+    Course course = new Course();
+    Teacher teacher = new Teacher();
+    Group group = new Group();
     CourseAssignment assignment = new CourseAssignment();
     CourseAssignment savedAssignment = new CourseAssignment();
     CourseAssignmentResponse response = mock(CourseAssignmentResponse.class);
 
     when(request.teacherId()).thenReturn(UUID.randomUUID());
     when(request.courseId()).thenReturn(UUID.randomUUID());
+    when(request.groupId()).thenReturn(UUID.randomUUID());
     when(courseAssignmentRepository.existsByTeacherIdAndCourseId(
             request.teacherId(), request.courseId()))
         .thenReturn(false);
+    when(courseRepository.findById(request.courseId())).thenReturn(Optional.of(course));
+    when(teacherRepository.findById(request.teacherId())).thenReturn(Optional.of(teacher));
+    when(groupRepository.findById(request.groupId())).thenReturn(Optional.of(group));
     when(courseAssignmentMapper.toEntity(request)).thenReturn(assignment);
     when(courseAssignmentRepository.save(assignment)).thenReturn(savedAssignment);
     when(courseAssignmentMapper.toResponse(savedAssignment)).thenReturn(response);
@@ -53,6 +72,9 @@ public class CourseAssignmentServiceTest {
 
     verify(courseAssignmentRepository)
         .existsByTeacherIdAndCourseId(request.teacherId(), request.courseId());
+    verify(courseRepository).findById(request.courseId());
+    verify(teacherRepository).findById(request.teacherId());
+    verify(groupRepository).findById(request.groupId());
     verify(courseAssignmentMapper).toEntity(request);
     verify(courseAssignmentRepository).save(assignment);
     verify(courseAssignmentMapper).toResponse(savedAssignment);
@@ -177,11 +199,20 @@ public class CourseAssignmentServiceTest {
   void update_shouldReturnUpdatedCourseAssignment() {
     UUID id = UUID.randomUUID();
     CourseAssignmentRequest request = mock(CourseAssignmentRequest.class);
+    Course course = new Course();
+    Teacher teacher = new Teacher();
+    Group group = new Group();
     CourseAssignment assignment = new CourseAssignment();
     CourseAssignment updatedAssignment = new CourseAssignment();
     CourseAssignmentResponse response = mock(CourseAssignmentResponse.class);
 
+    when(request.teacherId()).thenReturn(UUID.randomUUID());
+    when(request.courseId()).thenReturn(UUID.randomUUID());
+    when(request.groupId()).thenReturn(UUID.randomUUID());
     when(courseAssignmentRepository.findById(id)).thenReturn(Optional.of(assignment));
+    when(courseRepository.findById(request.courseId())).thenReturn(Optional.of(course));
+    when(teacherRepository.findById(request.teacherId())).thenReturn(Optional.of(teacher));
+    when(groupRepository.findById(request.groupId())).thenReturn(Optional.of(group));
     when(courseAssignmentRepository.save(assignment)).thenReturn(updatedAssignment);
     when(courseAssignmentMapper.toResponse(updatedAssignment)).thenReturn(response);
 
@@ -190,7 +221,9 @@ public class CourseAssignmentServiceTest {
     assertEquals(response, result);
 
     verify(courseAssignmentRepository).findById(id);
-    verify(courseAssignmentMapper).toEntity(assignment, request);
+    verify(courseRepository).findById(request.courseId());
+    verify(teacherRepository).findById(request.teacherId());
+    verify(groupRepository).findById(request.groupId());
     verify(courseAssignmentRepository).save(assignment);
     verify(courseAssignmentMapper).toResponse(updatedAssignment);
   }
