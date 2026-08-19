@@ -25,7 +25,8 @@ public class GraduationService {
   private final CourseAverageService courseAverageService;
 
   public boolean isGraduable(UUID studentId) {
-    List<StudentGroupHistory> groupHistory = studentGroupHistoryRepository.findByStudentId(studentId);
+    List<StudentGroupHistory> groupHistory =
+        studentGroupHistoryRepository.findByStudentId(studentId);
 
     if (groupHistory.isEmpty()) {
       throw new BusinessException("No group history found for student " + studentId);
