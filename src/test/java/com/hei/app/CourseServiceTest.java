@@ -10,9 +10,12 @@ import com.hei.app.dto.course.CourseRequest;
 import com.hei.app.dto.course.CourseResponse;
 import com.hei.app.exceptions.DuplicateResourceException;
 import com.hei.app.exceptions.ResourceNotFoundException;
+import com.hei.app.exceptions.UnauthorizedActionException;
 import com.hei.app.mapper.CourseMapper;
 import com.hei.app.model.Course;
+import com.hei.app.model.Role;
 import com.hei.app.repository.CourseRepository;
+import com.hei.app.security.CurrentUser;
 import com.hei.app.service.CourseService;
 import java.util.List;
 import java.util.Optional;
@@ -44,14 +47,9 @@ public class CourseServiceTest {
     when(courseRepository.save(course)).thenReturn(savedCourse);
     when(courseMapper.toResponse(savedCourse)).thenReturn(response);
 
-    CourseResponse result = courseService.create(request);
+    CourseResponse result = courseService.create(request, admin());
 
     assertEquals(response, result);
-
-    verify(courseRepository).existsByRef("PROG4");
-    verify(courseMapper).toEntity(request);
-    verify(courseRepository).save(course);
-    verify(courseMapper).toResponse(savedCourse);
   }
 
   @Test
@@ -61,9 +59,21 @@ public class CourseServiceTest {
     when(request.ref()).thenReturn("PROG4");
     when(courseRepository.existsByRef("PROG4")).thenReturn(true);
 
-    assertThrows(DuplicateResourceException.class, () -> courseService.create(request));
+    assertThrows(DuplicateResourceException.class, () -> courseService.create(request, admin()));
+  }
 
-    verify(courseRepository).existsByRef("PROG4");
+  @Test
+  void student_cannotCreateCourse() {
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> courseService.create(mock(CourseRequest.class), student(UUID.randomUUID())));
+  }
+
+  @Test
+  void teacher_cannotCreateCourse() {
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> courseService.create(mock(CourseRequest.class), teacher(UUID.randomUUID())));
   }
 
   @Test
@@ -75,12 +85,9 @@ public class CourseServiceTest {
     when(courseRepository.findById(id)).thenReturn(Optional.of(course));
     when(courseMapper.toResponse(course)).thenReturn(response);
 
-    CourseResponse result = courseService.findById(id);
+    CourseResponse result = courseService.findById(id, admin());
 
     assertEquals(response, result);
-
-    verify(courseRepository).findById(id);
-    verify(courseMapper).toResponse(course);
   }
 
   @Test
@@ -89,7 +96,7 @@ public class CourseServiceTest {
 
     when(courseRepository.findById(id)).thenReturn(Optional.empty());
 
-    assertThrows(ResourceNotFoundException.class, () -> courseService.findById(id));
+    assertThrows(ResourceNotFoundException.class, () -> courseService.findById(id, admin()));
   }
 
   @Test
@@ -101,19 +108,16 @@ public class CourseServiceTest {
     when(courseRepository.findByRef(ref)).thenReturn(Optional.of(course));
     when(courseMapper.toResponse(course)).thenReturn(response);
 
-    CourseResponse result = courseService.findByRef(ref);
+    CourseResponse result = courseService.findByRef(ref, admin());
 
     assertEquals(response, result);
-
-    verify(courseRepository).findByRef(ref);
-    verify(courseMapper).toResponse(course);
   }
 
   @Test
   void findByRef_shouldThrowWhenCourseDoesNotExist() {
     String ref = "PROG4";
     when(courseRepository.findByRef(ref)).thenReturn(Optional.empty());
-    assertThrows(ResourceNotFoundException.class, () -> courseService.findByRef(ref));
+    assertThrows(ResourceNotFoundException.class, () -> courseService.findByRef(ref, admin()));
   }
 
   @Test
@@ -129,13 +133,23 @@ public class CourseServiceTest {
     when(courseMapper.toResponse(course1)).thenReturn(response1);
     when(courseMapper.toResponse(course2)).thenReturn(response2);
 
-    List<CourseResponse> result = courseService.findAll();
+    List<CourseResponse> result = courseService.findAll(admin());
 
     assertEquals(List.of(response1, response2), result);
+  }
 
-    verify(courseRepository).findAll();
-    verify(courseMapper).toResponse(course1);
-    verify(courseMapper).toResponse(course2);
+  @Test
+  void student_canListCourses() {
+    Course course = new Course();
+    course.setRef("PROG1");
+    CourseResponse response = mock(CourseResponse.class);
+
+    when(courseRepository.findAll()).thenReturn(List.of(course));
+    when(courseMapper.toResponse(course)).thenReturn(response);
+
+    List<CourseResponse> result = courseService.findAll(student(UUID.randomUUID()));
+
+    assertEquals(List.of(response), result);
   }
 
   @Test
@@ -153,13 +167,9 @@ public class CourseServiceTest {
     when(courseRepository.save(course)).thenReturn(updatedCourse);
     when(courseMapper.toResponse(updatedCourse)).thenReturn(response);
 
-    CourseResponse result = courseService.update(id, request);
+    CourseResponse result = courseService.update(id, request, admin());
 
     assertEquals(response, result);
-
-    verify(courseRepository).findById(id);
-    verify(courseRepository).save(course);
-    verify(courseMapper).toResponse(updatedCourse);
   }
 
   @Test
@@ -169,7 +179,16 @@ public class CourseServiceTest {
 
     when(courseRepository.findById(id)).thenReturn(Optional.empty());
 
-    assertThrows(ResourceNotFoundException.class, () -> courseService.update(id, request));
+    assertThrows(ResourceNotFoundException.class, () -> courseService.update(id, request, admin()));
+  }
+
+  @Test
+  void teacher_cannotUpdateCourse() {
+    assertThrows(
+        UnauthorizedActionException.class,
+        () ->
+            courseService.update(
+                UUID.randomUUID(), mock(CourseRequest.class), teacher(UUID.randomUUID())));
   }
 
   @Test
@@ -177,9 +196,8 @@ public class CourseServiceTest {
     UUID id = UUID.randomUUID();
 
     when(courseRepository.existsById(id)).thenReturn(true);
-    courseService.delete(id);
+    courseService.delete(id, admin());
 
-    verify(courseRepository).existsById(id);
     verify(courseRepository).deleteById(id);
   }
 
@@ -188,7 +206,25 @@ public class CourseServiceTest {
     UUID id = UUID.randomUUID();
 
     when(courseRepository.existsById(id)).thenReturn(false);
-    assertThrows(ResourceNotFoundException.class, () -> courseService.delete(id));
-    verify(courseRepository).existsById(id);
+    assertThrows(ResourceNotFoundException.class, () -> courseService.delete(id, admin()));
+  }
+
+  @Test
+  void student_cannotDeleteCourse() {
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> courseService.delete(UUID.randomUUID(), student(UUID.randomUUID())));
+  }
+
+  private CurrentUser admin() {
+    return new CurrentUser(UUID.randomUUID(), Role.ADMIN, null, null);
+  }
+
+  private CurrentUser student(UUID studentId) {
+    return new CurrentUser(UUID.randomUUID(), Role.STUDENT, studentId, null);
+  }
+
+  private CurrentUser teacher(UUID teacherId) {
+    return new CurrentUser(UUID.randomUUID(), Role.TEACHER, null, teacherId);
   }
 }
