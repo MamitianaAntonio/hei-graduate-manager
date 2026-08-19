@@ -1,6 +1,8 @@
 package com.hei.app.repository;
 
 import com.hei.app.model.CourseAssignment;
+import com.hei.app.model.Semester;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +13,11 @@ public interface CourseAssignmentRepository extends JpaRepository<CourseAssignme
   List<CourseAssignment> findByCourseId(UUID courseId);
 
   List<CourseAssignment> findByGroupId(UUID groupId);
+
+  List<CourseAssignment> findByAcademicYear(Integer academicYear);
+
+  List<CourseAssignment> findByGroupIdInAndSemesterAndAcademicYear(
+      Collection<UUID> groupIds, Semester semester, Integer academicYear);
 
   boolean existsByTeacherIdAndCourseId(UUID teacherId, UUID courseId);
 }
