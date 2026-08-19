@@ -4,21 +4,31 @@ import com.hei.app.dto.group.GroupRequest;
 import com.hei.app.dto.group.GroupResponse;
 import com.hei.app.exceptions.DuplicateResourceException;
 import com.hei.app.exceptions.ResourceNotFoundException;
+import com.hei.app.exceptions.UnauthorizedActionException;
 import com.hei.app.mapper.GroupMapper;
 import com.hei.app.model.Group;
+import com.hei.app.model.Role;
 import com.hei.app.repository.GroupRepository;
+import com.hei.app.security.CurrentUser;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class GroupService {
   private final GroupRepository groupRepository;
   private final GroupMapper groupMapper;
 
-  public GroupResponse create(GroupRequest request) {
+  @Transactional
+  public GroupResponse create(GroupRequest request, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can create groups");
+    }
+
     if (groupRepository.existsByRef(request.ref())) {
       throw new DuplicateResourceException("Group already exists with ref: " + request.ref());
     }
@@ -29,7 +39,7 @@ public class GroupService {
     return groupMapper.toResponse(savedGroup);
   }
 
-  public GroupResponse findById(UUID id) {
+  public GroupResponse findById(UUID id, CurrentUser currentUser) {
     Group group =
         groupRepository
             .findById(id)
@@ -38,7 +48,7 @@ public class GroupService {
     return groupMapper.toResponse(group);
   }
 
-  public GroupResponse findByRef(String ref) {
+  public GroupResponse findByRef(String ref, CurrentUser currentUser) {
     Group group =
         groupRepository
             .findByRef(ref)
@@ -47,11 +57,16 @@ public class GroupService {
     return groupMapper.toResponse(group);
   }
 
-  public List<GroupResponse> findAll() {
+  public List<GroupResponse> findAll(CurrentUser currentUser) {
     return groupRepository.findAll().stream().map(groupMapper::toResponse).toList();
   }
 
-  public GroupResponse update(UUID id, GroupRequest request) {
+  @Transactional
+  public GroupResponse update(UUID id, GroupRequest request, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can update groups");
+    }
+
     Group group =
         groupRepository
             .findById(id)
@@ -64,7 +79,12 @@ public class GroupService {
     return groupMapper.toResponse(updatedGroup);
   }
 
-  public void delete(UUID id) {
+  @Transactional
+  public void delete(UUID id, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can delete groups");
+    }
+
     if (!groupRepository.existsById(id)) {
       throw new ResourceNotFoundException("Group not found with id: " + id);
     }
