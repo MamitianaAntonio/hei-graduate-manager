@@ -25,14 +25,13 @@ public class GraduationService {
   private final CourseAverageService courseAverageService;
 
   public boolean isGraduable(UUID studentId) {
-    List<StudentGroupHistory> groupHistory =
-        studentGroupHistoryRepository.findByStudentId(studentId);
+    List<StudentGroupHistory> history = studentGroupHistoryRepository.findByStudentId(studentId);
 
-    if (groupHistory.isEmpty()) {
+    if (history.isEmpty()) {
       throw new BusinessException("No group history found for student " + studentId);
     }
 
-    Map<UUID, Course> courses = coursesOf(studentId, groupHistory);
+    Map<UUID, Course> courses = coursesOf(studentId, history);
 
     for (Course course : courses.values()) {
       BigDecimal average;
@@ -50,14 +49,19 @@ public class GraduationService {
     return true;
   }
 
-  private Map<UUID, Course> coursesOf(UUID studentId, List<StudentGroupHistory> groupHistory) {
+  private Map<UUID, Course> coursesOf(UUID studentId, List<StudentGroupHistory> history) {
     Map<UUID, Course> courses = new LinkedHashMap<>();
 
-    for (StudentGroupHistory history : groupHistory) {
-      Group group = history.getGroup();
+    for (StudentGroupHistory entry : history) {
+      Group group = entry.getGroup();
 
       for (CourseAssignment assignment : courseAssignmentRepository.findByGroupId(group.getId())) {
-        courses.putIfAbsent(assignment.getCourse().getId(), assignment.getCourse());
+        SemesterPeriods.Period period =
+            SemesterPeriods.of(assignment.getSemester(), assignment.getAcademicYear());
+
+        if (SemesterPeriods.overlaps(entry.getStartDate(), entry.getEndDate(), period)) {
+          courses.putIfAbsent(assignment.getCourse().getId(), assignment.getCourse());
+        }
       }
     }
 

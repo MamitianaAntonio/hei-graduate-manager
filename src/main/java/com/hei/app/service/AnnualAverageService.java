@@ -1,7 +1,9 @@
 package com.hei.app.service;
 
 import com.hei.app.exceptions.BusinessException;
+import com.hei.app.model.CourseAssignment;
 import com.hei.app.model.Semester;
+import com.hei.app.repository.CourseAssignmentRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -12,10 +14,15 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class AnnualAverageService {
+  private final CourseAssignmentRepository courseAssignmentRepository;
   private final SemesterAverageService semesterAverageService;
 
   public BigDecimal calculate(UUID studentId, Integer academicYear) {
     List<Semester> semesters = semestersForAcademicYear(academicYear);
+
+    if (semesters.isEmpty()) {
+      throw new BusinessException("No courses available for academic year " + academicYear);
+    }
 
     BigDecimal weightedSum = BigDecimal.ZERO;
     BigDecimal totalCredits = BigDecimal.ZERO;
@@ -38,12 +45,10 @@ public class AnnualAverageService {
   }
 
   private List<Semester> semestersForAcademicYear(Integer academicYear) {
-    int yearIndex = academicYear - 2023;
-    if (yearIndex < 1 || yearIndex > 3) {
-      throw new BusinessException("Unsupported academic year: " + academicYear);
-    }
-
-    return List.of(
-        Semester.values()[(yearIndex - 1) * 2], Semester.values()[(yearIndex - 1) * 2 + 1]);
+    return courseAssignmentRepository.findByAcademicYear(academicYear).stream()
+        .map(CourseAssignment::getSemester)
+        .distinct()
+        .sorted()
+        .toList();
   }
 }
