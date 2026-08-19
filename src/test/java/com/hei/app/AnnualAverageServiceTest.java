@@ -6,10 +6,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hei.app.exceptions.BusinessException;
+import com.hei.app.model.CourseAssignment;
 import com.hei.app.model.Semester;
+import com.hei.app.repository.CourseAssignmentRepository;
 import com.hei.app.service.AnnualAverageService;
 import com.hei.app.service.SemesterAverageService;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +22,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class AnnualAverageServiceTest {
+  @Mock private CourseAssignmentRepository courseAssignmentRepository;
+
   @Mock private SemesterAverageService semesterAverageService;
 
   @InjectMocks private AnnualAverageService annualAverageService;
@@ -28,6 +33,8 @@ public class AnnualAverageServiceTest {
     UUID studentId = UUID.randomUUID();
     Integer academicYear = 2025;
 
+    when(courseAssignmentRepository.findByAcademicYear(academicYear))
+        .thenReturn(List.of(assignmentFor(Semester.S3), assignmentFor(Semester.S4)));
     when(semesterAverageService.calculate(studentId, Semester.S3, academicYear))
         .thenReturn(
             new SemesterAverageService.SemesterAverage(
@@ -41,6 +48,7 @@ public class AnnualAverageServiceTest {
 
     assertEquals(new BigDecimal("12.00"), result);
 
+    verify(courseAssignmentRepository).findByAcademicYear(academicYear);
     verify(semesterAverageService).calculate(studentId, Semester.S3, academicYear);
     verify(semesterAverageService).calculate(studentId, Semester.S4, academicYear);
   }
@@ -50,6 +58,8 @@ public class AnnualAverageServiceTest {
     UUID studentId = UUID.randomUUID();
     Integer academicYear = 2025;
 
+    when(courseAssignmentRepository.findByAcademicYear(academicYear))
+        .thenReturn(List.of(assignmentFor(Semester.S3), assignmentFor(Semester.S4)));
     when(semesterAverageService.calculate(studentId, Semester.S3, academicYear))
         .thenReturn(
             new SemesterAverageService.SemesterAverage(
@@ -69,10 +79,29 @@ public class AnnualAverageServiceTest {
     UUID studentId = UUID.randomUUID();
     Integer academicYear = 2025;
 
+    when(courseAssignmentRepository.findByAcademicYear(academicYear)).thenReturn(List.of());
+
+    assertThrows(
+        BusinessException.class, () -> annualAverageService.calculate(studentId, academicYear));
+  }
+
+  @Test
+  void calculate_shouldPropagateSemesterErrorWhenNoGradesAreAvailable() {
+    UUID studentId = UUID.randomUUID();
+    Integer academicYear = 2025;
+
+    when(courseAssignmentRepository.findByAcademicYear(academicYear))
+        .thenReturn(List.of(assignmentFor(Semester.S3), assignmentFor(Semester.S4)));
     when(semesterAverageService.calculate(studentId, Semester.S3, academicYear))
         .thenThrow(new BusinessException("No courses available"));
 
     assertThrows(
         BusinessException.class, () -> annualAverageService.calculate(studentId, academicYear));
+  }
+
+  private CourseAssignment assignmentFor(Semester semester) {
+    CourseAssignment assignment = new CourseAssignment();
+    assignment.setSemester(semester);
+    return assignment;
   }
 }
