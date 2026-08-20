@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -35,9 +36,13 @@ public class SecurityConfig {
         .httpBasic(AbstractHttpConfigurer::disable)
         .exceptionHandling(
             exceptions ->
-                exceptions.defaultAuthenticationEntryPointFor(
-                    new HttpStatusEntryPoint(HttpStatus.FORBIDDEN),
-                    new AntPathRequestMatcher("/api/**")))
+                exceptions
+                    .defaultAuthenticationEntryPointFor(
+                        new HttpStatusEntryPoint(HttpStatus.FORBIDDEN),
+                        new AntPathRequestMatcher("/api/**"))
+                    .defaultAuthenticationEntryPointFor(
+                        new LoginUrlAuthenticationEntryPoint("/login"),
+                        new AntPathRequestMatcher("/**")))
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers("/api/auth/**")
