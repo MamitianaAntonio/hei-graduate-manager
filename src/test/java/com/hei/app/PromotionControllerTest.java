@@ -25,6 +25,7 @@ import com.hei.app.security.CurrentUserResolver;
 import com.hei.app.security.CustomUserDetailsService;
 import com.hei.app.security.JwtService;
 import com.hei.app.security.SecurityConfig;
+import com.hei.app.service.GraduateExportService;
 import com.hei.app.service.PromotionService;
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +51,8 @@ public class PromotionControllerTest {
   @MockBean private JwtService jwtService;
 
   @MockBean private CustomUserDetailsService customUserDetailsService;
+
+  @MockBean private GraduateExportService graduateExportService;
 
   private static final UUID ADMIN_ACCOUNT_ID = UUID.randomUUID();
   private static final UUID STUDENT_ACCOUNT_ID = UUID.randomUUID();
