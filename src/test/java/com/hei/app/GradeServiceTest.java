@@ -245,6 +245,31 @@ public class GradeServiceTest {
   }
 
   @Test
+  void update_rollsBackWhenHistorySaveFails() {
+    UUID id = UUID.randomUUID();
+    UUID accountId = UUID.randomUUID();
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
+    Grade grade = new Grade();
+    grade.setValue(BigDecimal.TEN);
+    UserAccount userAccount = new UserAccount();
+
+    when(request.value()).thenReturn(BigDecimal.valueOf(12.5));
+    when(request.reason()).thenReturn("Correction");
+    when(gradeRepository.findById(id)).thenReturn(Optional.of(grade));
+    when(userAccountRepository.findById(accountId)).thenReturn(Optional.of(userAccount));
+    when(gradeRepository.save(grade)).thenReturn(grade);
+    org.mockito.Mockito.doThrow(new RuntimeException("DB failure"))
+        .when(gradeHistoryRepository)
+        .save(any());
+
+    assertThrows(
+        RuntimeException.class, () -> gradeService.update(id, request, adminWith(accountId)));
+
+    verify(gradeRepository).save(grade);
+    verify(gradeHistoryRepository).save(any());
+  }
+
+  @Test
   void admin_canDeleteGrade() {
     UUID id = UUID.randomUUID();
     Grade grade = gradeOf(studentWith(UUID.randomUUID()), examOf(courseWith(UUID.randomUUID())));
