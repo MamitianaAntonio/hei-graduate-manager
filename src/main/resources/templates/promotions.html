@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Promotions | HEI Graduate Manager</title>
+  </head>
+  <body>
+    <h1>Promotions</h1>
+    <p>Total : <span th:text="${#lists.size(promotions)}">0</span></p>
+
+    <div th:if="${#lists.isEmpty(promotions)}">
+      <p>Aucune promotion disponible.</p>
+    </div>
+
+    <table th:unless="${#lists.isEmpty(promotions)}">
+      <thead>
+        <tr>
+          <th>Année</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr th:each="promotion : ${promotions}">
+          <td th:text="${promotion.year}">2026</td>
+          <td>
+            <a
+              class="export"
+              th:href="@{/api/promotions/{id}/graduates/export(id=${promotion.id})}"
+            >
+              Exporter Excel
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>
