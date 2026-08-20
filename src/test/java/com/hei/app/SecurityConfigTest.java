@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.hei.app.model.Role;
@@ -49,8 +50,11 @@ public class SecurityConfigTest {
   }
 
   @Test
-  void protectedEndpoint_shouldBeRejectedWithoutJwt() throws Exception {
-    mockMvc.perform(get("/api/protected")).andExpect(status().isForbidden());
+  void protectedEndpoint_shouldRedirectToLoginWithoutJwt() throws Exception {
+    mockMvc
+        .perform(get("/api/protected"))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("http://localhost/login"));
   }
 
   @Test
@@ -87,12 +91,16 @@ public class SecurityConfigTest {
   void httpBasic_shouldNotAuthenticate() throws Exception {
     mockMvc
         .perform(get("/api/protected").header("Authorization", "Basic dXNlcjpwYXNz"))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("http://localhost/login"));
   }
 
   @Test
-  void formLogin_shouldNotRedirectToLogin() throws Exception {
-    mockMvc.perform(get("/api/protected")).andExpect(status().isForbidden());
+  void formLogin_shouldRedirectToLogin() throws Exception {
+    mockMvc
+        .perform(get("/api/protected"))
+        .andExpect(status().isFound())
+        .andExpect(redirectedUrl("http://localhost/login"));
   }
 
   private void stubValidToken(String token, String email) {

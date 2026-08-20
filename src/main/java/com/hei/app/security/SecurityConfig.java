@@ -22,12 +22,18 @@ public class SecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     return http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .formLogin(AbstractHttpConfigurer::disable)
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+        .formLogin(
+            form ->
+                form.loginPage("/login")
+                    .successHandler(adminAuthenticationSuccessHandler())
+                    .permitAll())
         .httpBasic(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers("/api/auth/**")
+                    .permitAll()
+                    .requestMatchers("/login", "/css/**")
                     .permitAll()
                     .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
                     .permitAll()
@@ -37,6 +43,11 @@ public class SecurityConfig {
                     .authenticated())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
+  }
+
+  @Bean
+  public AdminAuthenticationSuccessHandler adminAuthenticationSuccessHandler() {
+    return new AdminAuthenticationSuccessHandler();
   }
 
   @Bean
