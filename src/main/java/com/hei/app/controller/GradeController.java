@@ -2,6 +2,7 @@ package com.hei.app.controller;
 
 import com.hei.app.dto.grade.GradeRequest;
 import com.hei.app.dto.grade.GradeResponse;
+import com.hei.app.dto.grade.GradeUpdateRequest;
 import com.hei.app.security.AppUserDetails;
 import com.hei.app.security.CurrentUser;
 import com.hei.app.security.CurrentUserResolver;
@@ -75,7 +76,7 @@ public class GradeController {
   @PutMapping("/{id}")
   public GradeResponse update(
       @PathVariable UUID id,
-      @RequestBody GradeRequest request,
+      @RequestBody GradeUpdateRequest request,
       @AuthenticationPrincipal AppUserDetails appUser) {
     return gradeService.update(id, request, currentUserResolver.resolve(appUser.principal()));
   }
