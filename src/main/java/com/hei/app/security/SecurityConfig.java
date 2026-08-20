@@ -26,6 +26,7 @@ public class SecurityConfig {
     return http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+        .anonymous(AbstractHttpConfigurer::disable)
         .formLogin(
             form ->
                 form.loginPage("/login")
