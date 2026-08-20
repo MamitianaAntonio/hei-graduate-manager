@@ -5,12 +5,15 @@ import com.hei.app.dto.promotion.PromotionResponse;
 import com.hei.app.security.AppUserDetails;
 import com.hei.app.security.CurrentUser;
 import com.hei.app.security.CurrentUserResolver;
+import com.hei.app.service.GraduateExportService;
 import com.hei.app.service.PromotionService;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PromotionController {
   private final PromotionService promotionService;
   private final CurrentUserResolver currentUserResolver;
+  private final GraduateExportService graduateExportService;
 
   @PostMapping
   public ResponseEntity<PromotionResponse> create(
@@ -68,5 +72,22 @@ public class PromotionController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(@PathVariable UUID id, @AuthenticationPrincipal AppUserDetails appUser) {
     promotionService.delete(id, currentUserResolver.resolve(appUser.principal()));
+  }
+
+  @GetMapping("/{id}/graduates/export")
+  public ResponseEntity<byte[]> exportGraduates(
+      @PathVariable UUID id, @AuthenticationPrincipal AppUserDetails appUser) {
+
+    CurrentUser currentUser = currentUserResolver.resolve(appUser.principal());
+
+    byte[] file = graduateExportService.exportGraduates(id, currentUser);
+
+    return ResponseEntity.ok()
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"graduates-" + id + ".xlsx\"")
+        .contentType(
+            MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+        .body(file);
   }
 }
