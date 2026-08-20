@@ -27,6 +27,30 @@ public class SemesterAverageService {
   public record SemesterAverage(BigDecimal average, BigDecimal totalCredits) {}
 
   public SemesterAverage calculate(UUID studentId, Semester semester, Integer academicYear) {
+    List<Course> courses = coursesFor(studentId, semester, academicYear);
+
+    BigDecimal weightedSum = BigDecimal.ZERO;
+    BigDecimal totalCredits = BigDecimal.ZERO;
+
+    for (Course course : courses) {
+      BigDecimal courseAverage =
+          courseAverageService.calculateCourseAverage(studentId, course.getId());
+      BigDecimal credits = BigDecimal.valueOf(course.getCredits());
+
+      weightedSum = weightedSum.add(courseAverage.multiply(credits));
+      totalCredits = totalCredits.add(credits);
+    }
+
+    if (totalCredits.compareTo(BigDecimal.ZERO) == 0) {
+      throw new BusinessException(
+          "No credits available to compute semester average for student " + studentId);
+    }
+
+    BigDecimal average = weightedSum.divide(totalCredits, 2, RoundingMode.HALF_UP);
+    return new SemesterAverage(average, totalCredits);
+  }
+
+  public List<Course> coursesFor(UUID studentId, Semester semester, Integer academicYear) {
     List<UUID> groupIds = groupIdsFor(studentId, semester, academicYear);
 
     List<CourseAssignment> assignments =
@@ -48,25 +72,7 @@ public class SemesterAverageService {
       courses.putIfAbsent(assignment.getCourse().getId(), assignment.getCourse());
     }
 
-    BigDecimal weightedSum = BigDecimal.ZERO;
-    BigDecimal totalCredits = BigDecimal.ZERO;
-
-    for (Course course : courses.values()) {
-      BigDecimal courseAverage =
-          courseAverageService.calculateCourseAverage(studentId, course.getId());
-      BigDecimal credits = BigDecimal.valueOf(course.getCredits());
-
-      weightedSum = weightedSum.add(courseAverage.multiply(credits));
-      totalCredits = totalCredits.add(credits);
-    }
-
-    if (totalCredits.compareTo(BigDecimal.ZERO) == 0) {
-      throw new BusinessException(
-          "No credits available to compute semester average for student " + studentId);
-    }
-
-    BigDecimal average = weightedSum.divide(totalCredits, 2, RoundingMode.HALF_UP);
-    return new SemesterAverage(average, totalCredits);
+    return new ArrayList<>(courses.values());
   }
 
   private List<UUID> groupIdsFor(UUID studentId, Semester semester, Integer academicYear) {
