@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.hei.app.controller.view.PromotionViewController;
 import com.hei.app.dto.promotion.PromotionResponse;
+import com.hei.app.dto.student.StudentResponse;
 import com.hei.app.model.Role;
 import com.hei.app.security.AppPrincipal;
 import com.hei.app.security.AppUserDetails;
@@ -19,6 +20,7 @@ import com.hei.app.security.CurrentUserResolver;
 import com.hei.app.security.CustomUserDetailsService;
 import com.hei.app.security.JwtService;
 import com.hei.app.security.SecurityConfig;
+import com.hei.app.service.GraduateExportService;
 import com.hei.app.service.PromotionService;
 import java.util.List;
 import java.util.UUID;
@@ -39,6 +41,8 @@ class PromotionViewControllerTest {
   @Autowired private MockMvc mockMvc;
 
   @MockBean private PromotionService promotionService;
+
+  @MockBean private GraduateExportService graduateExportService;
 
   @MockBean private CurrentUserResolver currentUserResolver;
 
@@ -88,6 +92,33 @@ class PromotionViewControllerTest {
             content()
                 .string(
                     containsString("/api/promotions/" + secondPromotionId + "/graduates/export")));
+  }
+
+  @Test
+  void admin_canRenderGraduatesForPromotion() throws Exception {
+    stubAdmin();
+    UUID promotionId = UUID.randomUUID();
+    when(promotionService.findById(any(UUID.class), any(CurrentUser.class)))
+        .thenReturn(new PromotionResponse(promotionId, 2026));
+    when(graduateExportService.findGraduates(
+            promotionId, new CurrentUser(ADMIN_ACCOUNT_ID, Role.ADMIN, null, null)))
+        .thenReturn(
+            List.of(
+                new StudentResponse(
+                    UUID.randomUUID(),
+                    "STD001",
+                    "Alice",
+                    "Martin",
+                    promotionId,
+                    UUID.randomUUID())));
+
+    mockMvc
+        .perform(get("/promotions/" + promotionId).header("Authorization", "Bearer admin-token"))
+        .andExpect(status().isOk())
+        .andExpect(view().name("promotion-details"))
+        .andExpect(content().string(containsString("STD001")))
+        .andExpect(content().string(containsString("Martin")))
+        .andExpect(content().string(containsString("Alice")));
   }
 
   private void stubAdmin() {
