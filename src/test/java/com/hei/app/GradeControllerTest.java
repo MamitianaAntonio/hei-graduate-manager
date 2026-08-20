@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.hei.app.controller.GradeController;
 import com.hei.app.dto.grade.GradeRequest;
 import com.hei.app.dto.grade.GradeResponse;
+import com.hei.app.dto.grade.GradeUpdateRequest;
 import com.hei.app.exceptions.UnauthorizedActionException;
 import com.hei.app.model.Role;
 import com.hei.app.security.AppPrincipal;
@@ -171,24 +172,19 @@ public class GradeControllerTest {
   }
 
   @Test
-  void admin_canUpdateGrade() throws Exception {
-    stubAdmin();
+  void teacher_canUpdateGradeForAssignedCourse() throws Exception {
+    stubTeacher();
     UUID id = UUID.randomUUID();
     GradeResponse response = new GradeResponse(id, STUDENT_ID, EXAM_ID, new BigDecimal("18.0"));
-    when(gradeService.update(eq(id), any(GradeRequest.class), any(CurrentUser.class)))
+    when(gradeService.update(eq(id), any(GradeUpdateRequest.class), any(CurrentUser.class)))
         .thenReturn(response);
 
     mockMvc
         .perform(
             put("/api/grades/" + id)
-                .header("Authorization", "Bearer admin-token")
+                .header("Authorization", "Bearer teacher-token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"studentId\":\""
-                        + STUDENT_ID
-                        + "\",\"examId\":\""
-                        + EXAM_ID
-                        + "\",\"value\":18.0}"))
+                .content("{\"value\":18.0,\"reason\":\"Re-evaluation\"}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.value").value(18.0));
   }
@@ -265,22 +261,17 @@ public class GradeControllerTest {
     UUID id = UUID.randomUUID();
     doThrow(new UnauthorizedActionException("Students cannot update grades"))
         .when(gradeService)
-        .update(eq(id), any(GradeRequest.class), any(CurrentUser.class));
+        .update(eq(id), any(GradeUpdateRequest.class), any(CurrentUser.class));
 
     mockMvc
         .perform(
             put("/api/grades/" + id)
                 .header("Authorization", "Bearer student-token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"studentId\":\""
-                        + STUDENT_ID
-                        + "\",\"examId\":\""
-                        + EXAM_ID
-                        + "\",\"value\":18.0}"))
+                .content("{\"value\":18.0,\"reason\":\"Correction\"}"))
         .andExpect(status().isForbidden());
 
-    verify(gradeService).update(eq(id), any(GradeRequest.class), any(CurrentUser.class));
+    verify(gradeService).update(eq(id), any(GradeUpdateRequest.class), any(CurrentUser.class));
   }
 
   @Test
@@ -326,47 +317,19 @@ public class GradeControllerTest {
   }
 
   @Test
-  void teacher_canUpdateGradeForAssignedCourse() throws Exception {
-    stubTeacher();
-    UUID id = UUID.randomUUID();
-    GradeResponse response = new GradeResponse(id, STUDENT_ID, EXAM_ID, new BigDecimal("18.0"));
-    when(gradeService.update(eq(id), any(GradeRequest.class), any(CurrentUser.class)))
-        .thenReturn(response);
-
-    mockMvc
-        .perform(
-            put("/api/grades/" + id)
-                .header("Authorization", "Bearer teacher-token")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"studentId\":\""
-                        + STUDENT_ID
-                        + "\",\"examId\":\""
-                        + EXAM_ID
-                        + "\",\"value\":18.0}"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.value").value(18.0));
-  }
-
-  @Test
   void teacher_cannotUpdateGradeForUnassignedCourse() throws Exception {
     stubTeacher();
     UUID id = UUID.randomUUID();
     doThrow(new UnauthorizedActionException("Teacher is not assigned to this course"))
         .when(gradeService)
-        .update(eq(id), any(GradeRequest.class), any(CurrentUser.class));
+        .update(eq(id), any(GradeUpdateRequest.class), any(CurrentUser.class));
 
     mockMvc
         .perform(
             put("/api/grades/" + id)
                 .header("Authorization", "Bearer teacher-token")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"studentId\":\""
-                        + STUDENT_ID
-                        + "\",\"examId\":\""
-                        + EXAM_ID
-                        + "\",\"value\":18.0}"))
+                .content("{\"value\":18.0,\"reason\":\"Correction\"}"))
         .andExpect(status().isForbidden());
   }
 
