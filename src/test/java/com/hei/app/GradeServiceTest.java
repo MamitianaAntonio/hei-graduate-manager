@@ -1,8 +1,9 @@
 package com.hei.app;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -11,19 +12,25 @@ import static org.mockito.Mockito.when;
 
 import com.hei.app.dto.grade.GradeRequest;
 import com.hei.app.dto.grade.GradeResponse;
+import com.hei.app.dto.grade.GradeUpdateRequest;
 import com.hei.app.exceptions.DuplicateResourceException;
 import com.hei.app.exceptions.ResourceNotFoundException;
 import com.hei.app.exceptions.UnauthorizedActionException;
+import com.hei.app.mapper.GradeHistoryMapper;
 import com.hei.app.mapper.GradeMapper;
 import com.hei.app.model.Course;
 import com.hei.app.model.Exam;
 import com.hei.app.model.Grade;
+import com.hei.app.model.GradeHistory;
 import com.hei.app.model.Role;
 import com.hei.app.model.Student;
+import com.hei.app.model.UserAccount;
 import com.hei.app.repository.CourseAssignmentRepository;
 import com.hei.app.repository.ExamRepository;
+import com.hei.app.repository.GradeHistoryRepository;
 import com.hei.app.repository.GradeRepository;
 import com.hei.app.repository.StudentRepository;
+import com.hei.app.repository.UserAccountRepository;
 import com.hei.app.security.CurrentUser;
 import com.hei.app.service.GradeService;
 import java.math.BigDecimal;
@@ -32,6 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -47,6 +55,12 @@ public class GradeServiceTest {
   @Mock private ExamRepository examRepository;
 
   @Mock private CourseAssignmentRepository courseAssignmentRepository;
+
+  @Mock private GradeHistoryRepository gradeHistoryRepository;
+
+  @Mock private GradeHistoryMapper gradeHistoryMapper;
+
+  @Mock private UserAccountRepository userAccountRepository;
 
   @InjectMocks private GradeService gradeService;
 
@@ -190,26 +204,40 @@ public class GradeServiceTest {
   @Test
   void admin_canUpdateGrade() {
     UUID id = UUID.randomUUID();
-    GradeRequest request = mock(GradeRequest.class);
+    UUID accountId = UUID.randomUUID();
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
     Grade grade = new Grade();
+    grade.setValue(BigDecimal.TEN);
     Grade updatedGrade = new Grade();
     GradeResponse response = mock(GradeResponse.class);
+    UserAccount userAccount = new UserAccount();
 
     when(request.value()).thenReturn(BigDecimal.valueOf(12.5));
+    when(request.reason()).thenReturn("Correction");
     when(gradeRepository.findById(id)).thenReturn(Optional.of(grade));
+    when(userAccountRepository.findById(accountId)).thenReturn(Optional.of(userAccount));
     when(gradeRepository.save(grade)).thenReturn(updatedGrade);
     when(gradeMapper.toResponse(updatedGrade)).thenReturn(response);
 
-    GradeResponse result = gradeService.update(id, request, admin());
+    GradeResponse result = gradeService.update(id, request, adminWith(accountId));
 
     assertEquals(response, result);
-    verifyNoInteractions(courseAssignmentRepository);
+    verify(gradeHistoryRepository).save(any());
+
+    ArgumentCaptor<GradeHistory> captor = ArgumentCaptor.forClass(GradeHistory.class);
+    verify(gradeHistoryRepository).save(captor.capture());
+    GradeHistory savedHistory = captor.getValue();
+    assertEquals(BigDecimal.TEN, savedHistory.getOldValue());
+    assertEquals(BigDecimal.valueOf(12.5), savedHistory.getNewValue());
+    assertEquals("Correction", savedHistory.getReason());
+    assertEquals(userAccount, savedHistory.getModifiedBy());
+    assertNotNull(savedHistory.getModifiedAt());
   }
 
   @Test
   void update_shouldThrowWhenGradeDoesNotExist() {
     UUID id = UUID.randomUUID();
-    GradeRequest request = mock(GradeRequest.class);
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
 
     when(gradeRepository.findById(id)).thenReturn(Optional.empty());
 
@@ -276,7 +304,7 @@ public class GradeServiceTest {
 
   @Test
   void student_cannotUpdateGrade() {
-    GradeRequest request = mock(GradeRequest.class);
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
 
     assertThrows(
         UnauthorizedActionException.class,
@@ -336,22 +364,28 @@ public class GradeServiceTest {
     UUID id = UUID.randomUUID();
     UUID teacherId = UUID.randomUUID();
     UUID courseId = UUID.randomUUID();
-    GradeRequest request = mock(GradeRequest.class);
+    UUID accountId = UUID.randomUUID();
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
     Grade grade = gradeOf(studentWith(UUID.randomUUID()), examOf(courseWith(courseId)));
+    grade.setValue(BigDecimal.TEN);
     Grade updatedGrade = new Grade();
     GradeResponse response = mock(GradeResponse.class);
+    UserAccount userAccount = new UserAccount();
 
     when(request.value()).thenReturn(BigDecimal.valueOf(12.5));
+    when(request.reason()).thenReturn("Re-evaluation");
     when(gradeRepository.findById(id)).thenReturn(Optional.of(grade));
     when(courseAssignmentRepository.existsByTeacherIdAndCourseId(teacherId, courseId))
         .thenReturn(true);
+    when(userAccountRepository.findById(accountId)).thenReturn(Optional.of(userAccount));
     when(gradeRepository.save(grade)).thenReturn(updatedGrade);
     when(gradeMapper.toResponse(updatedGrade)).thenReturn(response);
 
-    GradeResponse result = gradeService.update(id, request, teacher(teacherId));
+    GradeResponse result = gradeService.update(id, request, teacherWith(teacherId, accountId));
 
     assertEquals(response, result);
     verify(courseAssignmentRepository).existsByTeacherIdAndCourseId(teacherId, courseId);
+    verify(gradeHistoryRepository).save(any());
   }
 
   @Test
@@ -376,7 +410,7 @@ public class GradeServiceTest {
     UUID id = UUID.randomUUID();
     UUID teacherId = UUID.randomUUID();
     UUID courseId = UUID.randomUUID();
-    GradeRequest request = mock(GradeRequest.class);
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
     Grade grade = gradeOf(studentWith(UUID.randomUUID()), examOf(courseWith(courseId)));
 
     when(gradeRepository.findById(id)).thenReturn(Optional.of(grade));
@@ -430,7 +464,7 @@ public class GradeServiceTest {
   @Test
   void teacherProfileMissing_shouldThrow() {
     UUID id = UUID.randomUUID();
-    GradeRequest request = mock(GradeRequest.class);
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
     Grade grade = gradeOf(studentWith(UUID.randomUUID()), examOf(courseWith(UUID.randomUUID())));
     CurrentUser currentUser = new CurrentUser(UUID.randomUUID(), Role.TEACHER, null, null);
 
@@ -440,8 +474,56 @@ public class GradeServiceTest {
         UnauthorizedActionException.class, () -> gradeService.update(id, request, currentUser));
   }
 
+  @Test
+  void update_createsGradeHistoryWithCorrectFields() {
+    UUID id = UUID.randomUUID();
+    UUID accountId = UUID.randomUUID();
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
+    Grade grade = new Grade();
+    grade.setValue(BigDecimal.valueOf(10));
+    Grade updatedGrade = new Grade();
+    GradeResponse response = mock(GradeResponse.class);
+    UserAccount userAccount = new UserAccount();
+    userAccount.setId(accountId);
+
+    when(request.value()).thenReturn(BigDecimal.valueOf(15));
+    when(request.reason()).thenReturn("Grade adjustment");
+    when(gradeRepository.findById(id)).thenReturn(Optional.of(grade));
+    when(userAccountRepository.findById(accountId)).thenReturn(Optional.of(userAccount));
+    when(gradeRepository.save(grade)).thenReturn(updatedGrade);
+    when(gradeMapper.toResponse(updatedGrade)).thenReturn(response);
+
+    gradeService.update(id, request, adminWith(accountId));
+
+    ArgumentCaptor<GradeHistory> captor = ArgumentCaptor.forClass(GradeHistory.class);
+    verify(gradeHistoryRepository).save(captor.capture());
+
+    GradeHistory history = captor.getValue();
+    assertEquals(grade, history.getGrade());
+    assertEquals(BigDecimal.valueOf(10), history.getOldValue());
+    assertEquals(BigDecimal.valueOf(15), history.getNewValue());
+    assertEquals("Grade adjustment", history.getReason());
+    assertEquals(userAccount, history.getModifiedBy());
+    assertNotNull(history.getModifiedAt());
+  }
+
+  @Test
+  void update_doesNotCreateHistoryWhenStudentTriesToUpdate() {
+    GradeUpdateRequest request = mock(GradeUpdateRequest.class);
+
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> gradeService.update(UUID.randomUUID(), request, student(UUID.randomUUID())));
+
+    verifyNoInteractions(gradeHistoryRepository);
+  }
+
   private CurrentUser admin() {
     return new CurrentUser(UUID.randomUUID(), Role.ADMIN, null, null);
+  }
+
+  private CurrentUser adminWith(UUID accountId) {
+    return new CurrentUser(accountId, Role.ADMIN, null, null);
   }
 
   private CurrentUser student(UUID studentId) {
@@ -450,6 +532,10 @@ public class GradeServiceTest {
 
   private CurrentUser teacher(UUID teacherId) {
     return new CurrentUser(UUID.randomUUID(), Role.TEACHER, null, teacherId);
+  }
+
+  private CurrentUser teacherWith(UUID teacherId, UUID accountId) {
+    return new CurrentUser(accountId, Role.TEACHER, null, teacherId);
   }
 
   private Grade gradeOf(Student student, Exam exam) {
