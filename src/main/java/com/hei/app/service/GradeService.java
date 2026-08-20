@@ -2,19 +2,27 @@ package com.hei.app.service;
 
 import com.hei.app.dto.grade.GradeRequest;
 import com.hei.app.dto.grade.GradeResponse;
+import com.hei.app.dto.grade.GradeUpdateRequest;
 import com.hei.app.exceptions.DuplicateResourceException;
 import com.hei.app.exceptions.ResourceNotFoundException;
 import com.hei.app.exceptions.UnauthorizedActionException;
+import com.hei.app.mapper.GradeHistoryMapper;
 import com.hei.app.mapper.GradeMapper;
 import com.hei.app.model.Exam;
 import com.hei.app.model.Grade;
+import com.hei.app.model.GradeHistory;
 import com.hei.app.model.Role;
 import com.hei.app.model.Student;
+import com.hei.app.model.UserAccount;
 import com.hei.app.repository.CourseAssignmentRepository;
 import com.hei.app.repository.ExamRepository;
+import com.hei.app.repository.GradeHistoryRepository;
 import com.hei.app.repository.GradeRepository;
 import com.hei.app.repository.StudentRepository;
+import com.hei.app.repository.UserAccountRepository;
 import com.hei.app.security.CurrentUser;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +38,9 @@ public class GradeService {
   private final StudentRepository studentRepository;
   private final ExamRepository examRepository;
   private final CourseAssignmentRepository courseAssignmentRepository;
+  private final GradeHistoryRepository gradeHistoryRepository;
+  private final GradeHistoryMapper gradeHistoryMapper;
+  private final UserAccountRepository userAccountRepository;
 
   @Transactional
   public GradeResponse create(GradeRequest request, CurrentUser currentUser) {
@@ -139,7 +150,7 @@ public class GradeService {
   }
 
   @Transactional
-  public GradeResponse update(UUID id, GradeRequest request, CurrentUser currentUser) {
+  public GradeResponse update(UUID id, GradeUpdateRequest request, CurrentUser currentUser) {
     if (currentUser.role() == Role.STUDENT) {
       throw new UnauthorizedActionException("Students cannot update grades");
     }
@@ -150,9 +161,25 @@ public class GradeService {
       assertTeacherAssignedToCourse(requireTeacherId(currentUser), courseIdOfGrade(grade));
     }
 
+    BigDecimal oldValue = grade.getValue();
     grade.setValue(request.value());
 
     Grade updatedGrade = gradeRepository.save(grade);
+
+    UserAccount modifier =
+        userAccountRepository
+            .findById(currentUser.accountId())
+            .orElseThrow(() -> new ResourceNotFoundException("User account not found"));
+
+    GradeHistory history = new GradeHistory();
+    history.setGrade(grade);
+    history.setOldValue(oldValue);
+    history.setNewValue(request.value());
+    history.setReason(request.reason());
+    history.setModifiedBy(modifier);
+    history.setModifiedAt(Instant.now());
+    gradeHistoryRepository.save(history);
+
     return gradeMapper.toResponse(updatedGrade);
   }
 
