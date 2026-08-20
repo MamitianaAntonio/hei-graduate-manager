@@ -134,17 +134,33 @@ public class PromotionServiceTest {
   }
 
   @Test
-  void student_canListPromotions() {
-    Promotion promotion = new Promotion();
-    promotion.setYear(2026);
-    PromotionResponse response = mock(PromotionResponse.class);
+  void student_cannotListPromotions() {
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> promotionService.findAll(student(UUID.randomUUID())));
+  }
 
-    when(promotionRepository.findAll()).thenReturn(List.of(promotion));
-    when(promotionMapper.toResponse(promotion)).thenReturn(response);
+  @Test
+  void teacher_cannotReadPromotion() {
+    UUID id = UUID.randomUUID();
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> promotionService.findById(id, teacher(UUID.randomUUID())));
+  }
 
-    List<PromotionResponse> result = promotionService.findAll(student(UUID.randomUUID()));
+  @Test
+  void teacher_cannotListPromotions() {
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> promotionService.findAll(teacher(UUID.randomUUID())));
+  }
 
-    assertEquals(List.of(response), result);
+  @Test
+  void student_cannotReadPromotion() {
+    UUID id = UUID.randomUUID();
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> promotionService.findById(id, student(UUID.randomUUID())));
   }
 
   @Test

@@ -40,6 +40,10 @@ public class GroupService {
   }
 
   public GroupResponse findById(UUID id, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can read groups");
+    }
+
     Group group =
         groupRepository
             .findById(id)
@@ -49,6 +53,10 @@ public class GroupService {
   }
 
   public GroupResponse findByRef(String ref, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can read groups");
+    }
+
     Group group =
         groupRepository
             .findByRef(ref)
@@ -58,6 +66,10 @@ public class GroupService {
   }
 
   public List<GroupResponse> findAll(CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can read groups");
+    }
+
     return groupRepository.findAll().stream().map(groupMapper::toResponse).toList();
   }
 
