@@ -26,7 +26,15 @@ public class SecurityConfig {
         .formLogin(AbstractHttpConfigurer::disable)
         .httpBasic(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
-            auth -> auth.requestMatchers("/api/auth/**").permitAll().anyRequest().authenticated())
+            auth ->
+                auth.requestMatchers("/api/auth/**")
+                    .permitAll()
+                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html")
+                    .permitAll()
+                    .requestMatchers("/promotions/**")
+                    .hasRole("ADMIN")
+                    .anyRequest()
+                    .authenticated())
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
