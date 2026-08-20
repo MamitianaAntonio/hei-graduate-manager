@@ -135,17 +135,31 @@ public class GroupServiceTest {
   }
 
   @Test
-  void student_canListGroups() {
-    Group group = new Group();
-    group.setRef("K1");
-    GroupResponse response = mock(GroupResponse.class);
+  void student_cannotListGroups() {
+    assertThrows(
+        UnauthorizedActionException.class, () -> groupService.findAll(student(UUID.randomUUID())));
+  }
 
-    when(groupRepository.findAll()).thenReturn(List.of(group));
-    when(groupMapper.toResponse(group)).thenReturn(response);
+  @Test
+  void teacher_cannotReadGroup() {
+    UUID id = UUID.randomUUID();
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> groupService.findById(id, teacher(UUID.randomUUID())));
+  }
 
-    List<GroupResponse> result = groupService.findAll(student(UUID.randomUUID()));
+  @Test
+  void teacher_cannotListGroups() {
+    assertThrows(
+        UnauthorizedActionException.class, () -> groupService.findAll(teacher(UUID.randomUUID())));
+  }
 
-    assertEquals(List.of(response), result);
+  @Test
+  void student_cannotReadGroup() {
+    UUID id = UUID.randomUUID();
+    assertThrows(
+        UnauthorizedActionException.class,
+        () -> groupService.findById(id, student(UUID.randomUUID())));
   }
 
   @Test
