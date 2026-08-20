@@ -25,7 +25,7 @@ import com.hei.app.service.TranscriptDataService;
 import com.hei.app.service.TranscriptService;
 import java.io.File;
 import java.net.URL;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -77,9 +77,9 @@ public class TranscriptServiceTest {
     verify(bucketComponent)
         .upload(org.mockito.ArgumentMatchers.eq(pdf), org.mockito.ArgumentMatchers.anyString());
 
-    ArgumentCaptor<List<? extends PojaEvent>> captor = ArgumentCaptor.forClass(List.class);
+    ArgumentCaptor<Collection<PojaEvent>> captor = ArgumentCaptor.forClass(Collection.class);
     verify(eventProducer).accept(captor.capture());
-    SendTranscriptRequested event = (SendTranscriptRequested) captor.getValue().get(0);
+    SendTranscriptRequested event = (SendTranscriptRequested) captor.getValue().iterator().next();
     assertEquals("student@hei.com", event.getTo());
     assertEquals(presignedUrl.toString(), event.getPresignedUrl());
     org.junit.jupiter.api.Assertions.assertTrue(event.getBucketKey().startsWith("transcripts/"));
