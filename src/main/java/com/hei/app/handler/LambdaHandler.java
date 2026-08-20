@@ -2,6 +2,7 @@ package com.hei.app.handler;
 
 import com.amazonaws.serverless.exceptions.ContainerInitializationException;
 import com.amazonaws.serverless.proxy.model.AwsProxyResponse;
+import com.amazonaws.serverless.proxy.model.ContainerConfig;
 import com.amazonaws.serverless.proxy.model.HttpApiV2ProxyRequest;
 import com.amazonaws.serverless.proxy.spring.SpringBootLambdaContainerHandler;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -19,6 +20,9 @@ public class LambdaHandler implements RequestStreamHandler {
 
   static {
     try {
+      ContainerConfig containerConfig = SpringBootLambdaContainerHandler.getContainerConfig();
+      containerConfig.addBinaryContentTypes(
+          "application/javascript", "text/css", "application/octet-stream");
       handler = SpringBootLambdaContainerHandler.getHttpApiV2ProxyHandler(PojaApplication.class);
     } catch (ContainerInitializationException e) {
       throw new RuntimeException("Initialization of Spring Boot Application failed", e);
