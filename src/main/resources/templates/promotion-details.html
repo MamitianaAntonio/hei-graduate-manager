@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title th:text="${'Promotion ' + promotion.year + ' | HEI Graduate Manager'}"></title>
+    <link rel="stylesheet" th:href="@{/css/hei-theme.css}" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="back-link" href="/promotions">← Back to promotions</a>
+        <div class="brand">HEI Graduate Manager</div>
+      </header>
+
+      <main class="card">
+        <div class="header-row">
+          <div>
+            <p class="eyebrow">Promotion details</p>
+            <h1 th:text="|Graduates of promotion ${promotion.year}|"></h1>
+          </div>
+          <a class="btn btn-primary" th:href="@{/api/promotions/{id}/graduates/export(id=${promotion.id})}">
+            Export graduates
+          </a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(graduates)}" class="empty-state">
+          <h2>No graduates found</h2>
+          <p>No graduates were found for this promotion.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(graduates)}" class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Student number</th>
+                <th>Last name</th>
+                <th>First name</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="graduate : ${graduates}">
+                <td th:text="${graduate.std}"></td>
+                <td th:text="${graduate.lastName}"></td>
+                <td th:text="${graduate.firstName}"></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

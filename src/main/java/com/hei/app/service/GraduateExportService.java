@@ -1,8 +1,10 @@
 package com.hei.app.service;
 
+import com.hei.app.dto.student.StudentResponse;
 import com.hei.app.exceptions.BusinessException;
 import com.hei.app.exceptions.ResourceNotFoundException;
 import com.hei.app.exceptions.UnauthorizedActionException;
+import com.hei.app.mapper.StudentMapper;
 import com.hei.app.model.Promotion;
 import com.hei.app.model.Role;
 import com.hei.app.model.Student;
@@ -26,6 +28,14 @@ public class GraduateExportService {
   private final StudentRepository studentRepository;
   private final PromotionRepository promotionRepository;
   private final GraduationService graduationService;
+  private final StudentMapper studentMapper;
+
+  public List<StudentResponse> findGraduates(UUID promotionId, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can read graduates");
+    }
+    return graduatesOf(promotionId).stream().map(studentMapper::toResponse).toList();
+  }
 
   public byte[] exportGraduates(UUID promotionId, CurrentUser currentUser) {
     if (currentUser.role() != Role.ADMIN) {
@@ -36,11 +46,18 @@ public class GraduateExportService {
             .findById(promotionId)
             .orElseThrow(
                 () -> new ResourceNotFoundException("Promotion not found with id: " + promotionId));
-    List<Student> graduates =
-        studentRepository.findByPromotionId(promotion.getId()).stream()
-            .filter(student -> graduationService.isGraduable(student.getId()))
-            .toList();
-    return generateExcel(promotion, graduates);
+    return generateExcel(promotion, graduatesOf(promotionId));
+  }
+
+  private List<Student> graduatesOf(UUID promotionId) {
+    Promotion promotion =
+        promotionRepository
+            .findById(promotionId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Promotion not found with id: " + promotionId));
+    return studentRepository.findByPromotionId(promotion.getId()).stream()
+        .filter(student -> graduationService.isGraduable(student.getId()))
+        .toList();
   }
 
   private byte[] generateExcel(Promotion promotion, List<Student> graduates) {
