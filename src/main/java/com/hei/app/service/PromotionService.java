@@ -40,6 +40,10 @@ public class PromotionService {
   }
 
   public PromotionResponse findById(UUID id, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can read promotions");
+    }
+
     Promotion promotion =
         promotionRepository
             .findById(id)
@@ -49,6 +53,10 @@ public class PromotionService {
   }
 
   public PromotionResponse findByYear(Integer year, CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can read promotions");
+    }
+
     Promotion promotion =
         promotionRepository
             .findByYear(year)
@@ -59,6 +67,10 @@ public class PromotionService {
   }
 
   public List<PromotionResponse> findAll(CurrentUser currentUser) {
+    if (currentUser.role() != Role.ADMIN) {
+      throw new UnauthorizedActionException("Only admin can read promotions");
+    }
+
     return promotionRepository.findAll().stream().map(promotionMapper::toResponse).toList();
   }
 
