@@ -35,6 +35,8 @@ public class FacadeIT {
     new EventConf().configureProperties(registry);
     new BucketConf().configureProperties(registry);
     new EmailConf().configureProperties(registry);
+    registry.add("app.jwt.secret", () -> "integration-test-secret-key-which-is-long-enough");
+    registry.add("app.jwt.expiration-ms", () -> "3600000");
 
     try {
       var envConfClazz = Class.forName("com.hei.app.conf.EnvConf");
