@@ -91,7 +91,7 @@ public class SecurityConfigTest {
   }
 
   @Test
-  void formLogin_shouldNotRedirectToLogin() throws Exception {
+  void formLogin_shouldNotRedirectForApiRequests() throws Exception {
     mockMvc.perform(get("/api/protected")).andExpect(status().isForbidden());
   }
 

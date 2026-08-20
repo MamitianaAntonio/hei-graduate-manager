@@ -16,10 +16,10 @@
       <main class="card">
         <div class="header-row">
           <div>
-            <p class="eyebrow">Promotion details</p>
+            <p class="eyebrow">Admin workspace</p>
             <h1 th:text="|Graduates of promotion ${promotion.year}|"></h1>
           </div>
-          <a class="btn btn-primary" th:href="@{/api/promotions/{id}/graduates/export(id=${promotion.id})}">
+          <a class="btn btn-secondary" th:href="@{/api/promotions/{id}/graduates/export(id=${promotion.id})}">
             Export graduates
           </a>
         </div>

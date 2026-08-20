@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign in | HEI Graduate Manager</title>
+    <link rel="stylesheet" th:href="@{/css/hei-theme.css}" />
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="login-card card">
+        <div class="brand">HEI Graduate Manager</div>
+        <p class="eyebrow">Secure workspace</p>
+        <h1>Welcome back</h1>
+        <p class="login-intro">Sign in to access your academic workspace.</p>
+
+        <div th:if="${param.admin}" class="login-message login-error">
+          Only admin accounts can access this interface.
+        </div>
+        <div th:if="${param.error}" class="login-message login-error">
+          Invalid email or password.
+        </div>
+        <div th:if="${param.logout}" class="login-message login-success">
+          You have been signed out.
+        </div>
+
+        <form class="login-form" method="post" th:action="@{/login}">
+          <label for="username">Email address</label>
+          <input id="username" name="username" type="email" autocomplete="email" required />
+
+          <label for="password">Password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+
+          <button class="btn btn-primary login-button" type="submit">Sign in</button>
+        </form>
+
+        <p class="login-note">Admin access is required to view promotion data.</p>
+      </section>
+    </main>
+  </body>
+</html>

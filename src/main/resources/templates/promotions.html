@@ -15,12 +15,11 @@
       <main class="card">
         <div class="header-row">
           <div>
-            <p class="eyebrow">Academic overview</p>
+            <p class="eyebrow">Admin workspace</p>
             <h1>Promotions</h1>
-          </div>
-          <div class="count-chip">
-            <span th:text="${#lists.size(promotions)}">0</span>
-            total
+            <p class="page-summary">
+              <span th:text="${#lists.size(promotions)}"></span> academic promotions
+            </p>
           </div>
         </div>
 
@@ -40,20 +39,11 @@
             <tbody>
               <tr th:each="promotion : ${promotions}">
                 <td>
-                  <a
-                    class="promotion-link"
-                    th:href="@{/promotions/{id}(id=${promotion.id})}"
-                    th:text="${promotion.year}"
-                  >
-                    2026
-                  </a>
+                  <a class="promotion-link" th:href="@{/promotions/{id}(id=${promotion.id})}" th:text="${promotion.year}"></a>
                 </td>
                 <td>
                   <div class="actions">
-                    <a
-                      class="btn btn-primary"
-                      th:href="@{/promotions/{id}(id=${promotion.id})}"
-                    >
+                    <a class="btn btn-primary" th:href="@{/promotions/{id}(id=${promotion.id})}">
                       View details
                     </a>
                     <a
